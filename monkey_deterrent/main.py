@@ -41,6 +41,13 @@ def init_gpio() -> pigpio.pi:
             "sudo systemctl enable --now pigpiod"
         )
     pi.set_mode(config.PIR_PIN, pigpio.INPUT)
+
+    # Silent idle state for the transducer IN pin. This module airhorns when IN
+    # is held at a steady level (DC) while powered, but is silent when IN floats.
+    # So idle = high-Z INPUT (no pull) — same as leaving the IN wire unplugged.
+    pi.hardware_PWM(config.BUZZER_PIN, 0, 0)
+    pi.set_mode(config.BUZZER_PIN, pigpio.INPUT)
+    pi.set_pull_up_down(config.BUZZER_PIN, pigpio.PUD_OFF)
     return pi
 
 
@@ -53,6 +60,8 @@ def cleanup(pi: pigpio.pi, buzzer: Buzzer, cam: Picamera2):
         pass
     if pi.connected:
         pi.hardware_PWM(config.BUZZER_PIN, 0, 0)
+        pi.set_mode(config.BUZZER_PIN, pigpio.INPUT)   # release to high-Z = silent
+        pi.set_pull_up_down(config.BUZZER_PIN, pigpio.PUD_OFF)
         pi.stop()
 
 

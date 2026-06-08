@@ -6,8 +6,14 @@ BUZZER_PIN = 18   # Ultrasonic transducer IN → GPIO18 (PWM0 hardware channel)
 # GPIO18 is a hardware-PWM pin, so pigpio drives these cleanly with no CPU jitter.
 ULTRASONIC_MIN_HZ  = 20_000
 ULTRASONIC_MAX_HZ  = 40_000
-ULTRASONIC_STEP_MS = 80      # how long each random tone holds before re-randomizing
 ULTRASONIC_DUTY    = 500_000 # pigpio duty cycle: 0–1_000_000 (500_000 = 50%)
+
+# Smooth random-walk parameters — abrupt frequency jumps create audible clicks,
+# so we glide between random targets in small ultrasonic steps (transient energy
+# stays >20 kHz = inaudible).
+ULTRASONIC_GLIDE_HZ   = 500    # Hz moved per micro-step while gliding
+ULTRASONIC_GLIDE_MS   = 3      # dwell per micro-step
+ULTRASONIC_STEP_MS    = 60     # dwell once a random target is reached
 
 # Model
 ENGINE = "ncnn"   # "ncnn" (faster on Pi) or "onnx"

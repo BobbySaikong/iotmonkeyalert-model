@@ -11,6 +11,8 @@ true ultrasonic transducer (e.g. a 40 kHz piezo) on the buzzer pin.
 import random
 import time
 
+import pigpio
+
 import config
 
 
@@ -29,19 +31,43 @@ class Buzzer:
         self._pi.hardware_PWM(self.pin, freq, duty)
 
     def _off(self):
+        # This module airhorns when IN sits at a steady logic level (DC) while
+        # powered, but is silent when IN floats (high-impedance) or is fed a
+        # clean ultrasonic PWM. To silence: stop PWM and release IN to INPUT
+        # (high-Z) — electrically identical to unplugging the IN wire.
         self._pi.hardware_PWM(self.pin, 0, 0)
+        self._pi.set_mode(self.pin, pigpio.INPUT)
+        self._pi.set_pull_up_down(self.pin, pigpio.PUD_OFF)
 
     def sound_alarm(self, duration: float = config.BUZZER_DURATION):
-        """Emit randomized ultrasonic tones across the configured band."""
+        """
+        Emit randomized ultrasonic tones across the configured band.
+
+        Frequencies are *glided* in small steps rather than jumped — an abrupt
+        jump is a step discontinuity that radiates an audible click. Small
+        ultrasonic steps keep all transient energy above 20 kHz (inaudible),
+        and the PWM is never dropped to 0 mid-burst (another click source).
+        """
+        lo, hi = config.ULTRASONIC_MIN_HZ, config.ULTRASONIC_MAX_HZ
+        glide_hz = config.ULTRASONIC_GLIDE_HZ
+        glide_dt = config.ULTRASONIC_GLIDE_MS / 1000.0
+        dwell    = config.ULTRASONIC_STEP_MS / 1000.0
+
         self._active = True
-        step = config.ULTRASONIC_STEP_MS / 1000.0
+        freq = random.randint(lo, hi)
+        self._tone(freq)
         end = time.time() + duration
         try:
             while time.time() < end:
-                freq = random.randint(config.ULTRASONIC_MIN_HZ,
-                                      config.ULTRASONIC_MAX_HZ)
+                target = random.randint(lo, hi)
+                step = glide_hz if target >= freq else -glide_hz
+                while abs(target - freq) > glide_hz:
+                    freq += step
+                    self._tone(freq)
+                    time.sleep(glide_dt)
+                freq = target
                 self._tone(freq)
-                time.sleep(step)
+                time.sleep(dwell)
         finally:
             self._off()
             self._active = False
