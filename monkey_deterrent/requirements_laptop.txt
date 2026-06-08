@@ -1,0 +1,4 @@
+# Install on your LAPTOP only — for model conversion
+ultralytics>=8.0.0
+onnx>=1.14.0
+onnxsim>=0.4.33

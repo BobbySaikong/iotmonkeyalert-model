@@ -1,0 +1,6 @@
+# Install on Pi — no PyTorch, no ultralytics (those cause "Illegal instruction")
+ncnn>=1.0.20240102        # ENGINE="ncnn" — faster on ARM CPU than onnxruntime
+onnxruntime>=1.16.0       # ENGINE="onnx" fallback
+opencv-python-headless>=4.8.0
+RPi.GPIO>=0.7.1
+# picamera2 and numpy are already installed via apt/system packages on Pi OS
