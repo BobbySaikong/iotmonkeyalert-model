@@ -2,5 +2,8 @@
 ncnn>=1.0.20240102        # ENGINE="ncnn" — faster on ARM CPU than onnxruntime
 onnxruntime>=1.16.0       # ENGINE="onnx" fallback
 opencv-python-headless>=4.8.0
-RPi.GPIO>=0.7.1
+pigpio>=1.78             # hardware PWM for clean ultrasonic (20–40 kHz) on GPIO18
+# Requires the pigpiod daemon:
+#   sudo apt install pigpio python3-pigpio
+#   sudo systemctl enable --now pigpiod
 # picamera2 and numpy are already installed via apt/system packages on Pi OS

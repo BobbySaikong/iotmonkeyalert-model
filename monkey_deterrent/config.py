@@ -1,6 +1,13 @@
 # GPIO pin numbers (BCM mode)
 PIR_PIN    = 17   # PIR sensor signal wire → GPIO17
-BUZZER_PIN = 18   # Passive buzzer IN → GPIO18
+BUZZER_PIN = 18   # Ultrasonic transducer IN → GPIO18 (PWM0 hardware channel)
+
+# Ultrasonic deterrent — randomized frequency sweep (Hz)
+# GPIO18 is a hardware-PWM pin, so pigpio drives these cleanly with no CPU jitter.
+ULTRASONIC_MIN_HZ  = 20_000
+ULTRASONIC_MAX_HZ  = 40_000
+ULTRASONIC_STEP_MS = 80      # how long each random tone holds before re-randomizing
+ULTRASONIC_DUTY    = 500_000 # pigpio duty cycle: 0–1_000_000 (500_000 = 50%)
 
 # Model
 ENGINE = "ncnn"   # "ncnn" (faster on Pi) or "onnx"

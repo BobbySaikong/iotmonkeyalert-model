@@ -15,7 +15,7 @@ import sys
 import time
 
 import cv2
-import RPi.GPIO as GPIO
+import pigpio
 from picamera2 import Picamera2
 
 import config
@@ -33,20 +33,27 @@ log = logging.getLogger(__name__)
 
 # ── GPIO setup ────────────────────────────────────────────────────────────────
 
-def init_gpio():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(config.PIR_PIN, GPIO.IN)
+def init_gpio() -> pigpio.pi:
+    pi = pigpio.pi()   # connects to the local pigpiod daemon
+    if not pi.connected:
+        raise RuntimeError(
+            "Cannot connect to pigpiod. Start it with: "
+            "sudo systemctl enable --now pigpiod"
+        )
+    pi.set_mode(config.PIR_PIN, pigpio.INPUT)
+    return pi
 
 
-def cleanup(buzzer: Buzzer, cam: Picamera2):
+def cleanup(pi: pigpio.pi, buzzer: Buzzer, cam: Picamera2):
     log.info("Shutting down …")
     buzzer.cleanup()
     try:
         cam.stop()
     except Exception:
         pass
-    GPIO.cleanup()
+    if pi.connected:
+        pi.hardware_PWM(config.BUZZER_PIN, 0, 0)
+        pi.stop()
 
 
 # ── Camera ────────────────────────────────────────────────────────────────────
@@ -69,8 +76,8 @@ def build_camera() -> Picamera2:
 # ── Main loop ─────────────────────────────────────────────────────────────────
 
 def run():
-    log.info("Initialising GPIO …")
-    init_gpio()
+    log.info("Initialising GPIO (pigpio) …")
+    pi = init_gpio()
 
     log.info("Loading detector (engine=%s)", config.ENGINE)
     detector = build_detector()
@@ -78,13 +85,13 @@ def run():
     log.info("Starting camera …")
     cam = build_camera()
 
-    buzzer = Buzzer(config.BUZZER_PIN)
-    buzzer.short_beep(freq=1500, ms=200)   # startup beep
+    buzzer = Buzzer(pi, config.BUZZER_PIN)
+    buzzer.short_beep(ms=200)   # startup ultrasonic blip
 
     last_alarm_time = 0.0
 
     def _shutdown(sig, frame):
-        cleanup(buzzer, cam)
+        cleanup(pi, buzzer, cam)
         sys.exit(0)
 
     signal.signal(signal.SIGINT,  _shutdown)
@@ -100,7 +107,7 @@ def run():
                 wait_until_cool(config.MAX_CPU_TEMP_C, config.TEMP_CHECK_INTERVAL)
 
             # ── PIR gate — saves CPU when no motion ──────────────────────
-            if not GPIO.input(config.PIR_PIN):
+            if not pi.read(config.PIR_PIN):
                 time.sleep(config.PIR_POLL_INTERVAL)
                 continue
 
@@ -136,7 +143,7 @@ def run():
     except Exception as exc:
         log.exception("Unexpected error: %s", exc)
     finally:
-        cleanup(buzzer, cam)
+        cleanup(pi, buzzer, cam)
 
 
 if __name__ == "__main__":
