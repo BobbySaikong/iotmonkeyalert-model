@@ -2,6 +2,7 @@
 ncnn>=1.0.20240102        # ENGINE="ncnn" — faster on ARM CPU than onnxruntime
 onnxruntime>=1.16.0       # ENGINE="onnx" fallback
 opencv-python-headless>=4.8.0
+requests>=2.31.0          # HTTPS POST to Telegram sendPhoto for detection alerts
 pigpio>=1.78             # hardware PWM for clean ultrasonic (20–40 kHz) on GPIO18
 # Requires the pigpiod daemon:
 #   sudo apt install pigpio python3-pigpio

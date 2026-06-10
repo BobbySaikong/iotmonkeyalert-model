@@ -13,6 +13,7 @@ import logging
 import signal
 import sys
 import time
+from datetime import datetime
 
 import cv2
 import pigpio
@@ -21,6 +22,7 @@ from picamera2 import Picamera2
 import config
 from buzzer import Buzzer
 from detector_factory import build_detector
+from telegram_notifier import TelegramNotifier
 from thermal import cpu_temp_c, wait_until_cool
 
 logging.basicConfig(
@@ -82,6 +84,21 @@ def build_camera() -> Picamera2:
     return cam
 
 
+# ── Annotation ────────────────────────────────────────────────────────────────
+
+def annotate_frame(frame_bgr, detections):
+    """Draw detection boxes + confidence labels on a copy of the BGR frame."""
+    annotated = frame_bgr.copy()
+    for x1, y1, x2, y2, score in detections:
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        label = f"monkey {score:.0%}"
+        cv2.putText(
+            annotated, label, (x1, max(0, y1 - 6)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2,
+        )
+    return annotated
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 
 def run():
@@ -96,6 +113,12 @@ def run():
 
     buzzer = Buzzer(pi, config.BUZZER_PIN)
     buzzer.short_beep(ms=200)   # startup ultrasonic blip
+
+    notifier = TelegramNotifier(
+        config.TELEGRAM_BOT_TOKEN,
+        config.TELEGRAM_CHAT_ID,
+        config.TELEGRAM_TIMEOUT,
+    )
 
     last_alarm_time = 0.0
 
@@ -133,10 +156,20 @@ def run():
 
             now = time.time()
             scores = [d[4] for d in detections]
+            best = max(scores)
             log.info(
                 "Monkey detected! %d box(es), best conf=%.2f",
-                len(detections), max(scores),
+                len(detections), best,
             )
+
+            # ── Confidence gate — only high-confidence hits sound the alarm ─
+            if best < config.BUZZER_CONFIDENCE_THRESHOLD:
+                log.info(
+                    "Below buzzer threshold (%.2f < %.2f) — no alarm.",
+                    best, config.BUZZER_CONFIDENCE_THRESHOLD,
+                )
+                time.sleep(config.PIR_POLL_INTERVAL)
+                continue
 
             # ── Cooldown guard ───────────────────────────────────────────
             if now - last_alarm_time < config.DETECTION_COOLDOWN:
@@ -146,6 +179,20 @@ def run():
                 continue
 
             last_alarm_time = now
+
+            # ── Telegram alert — annotated photo, encoded in memory ──────
+            annotated = annotate_frame(frame, detections)
+            ok, buf = cv2.imencode(".jpg", annotated)
+            if ok:
+                caption = (
+                    "🐒 Monkey detected\n"
+                    f"Time: {datetime.now():%Y-%m-%d %H:%M:%S}\n"
+                    f"Detection rate: {best:.0%} ({len(detections)} box(es))"
+                )
+                notifier.send_photo_async(buf.tobytes(), caption)
+            else:
+                log.warning("JPEG encode failed — skipping Telegram alert.")
+
             log.info("Sounding alarm for %.1f s …", config.BUZZER_DURATION)
             buzzer.sound_alarm(config.BUZZER_DURATION)
 

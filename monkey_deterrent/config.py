@@ -1,3 +1,5 @@
+import os
+
 # GPIO pin numbers (BCM mode)
 PIR_PIN    = 17   # PIR sensor signal wire → GPIO17
 BUZZER_PIN = 18   # Ultrasonic transducer IN → GPIO18 (PWM0 hardware channel)
@@ -30,6 +32,20 @@ NCNN_OUTPUT_BLOB = "out0"   # confirm against the .param file
 IMAGE_SIZE          = 416   # 416 is faster/cooler than 640; good enough for Pi
 CONFIDENCE_THRESHOLD = 0.50
 IOU_THRESHOLD        = 0.45
+
+# The detector still *detects* from CONFIDENCE_THRESHOLD, but the buzzer (and the
+# Telegram alert) only fire when the best detection in a frame is at/above this.
+# Raise toward 0.90 for fewer false alarms; lower toward 0.80 to catch more.
+BUZZER_CONFIDENCE_THRESHOLD = 0.85
+
+# Telegram alerts — secrets come from the environment, never committed to git.
+# Set these in the systemd unit (Environment=...) or your shell before running.
+# Get the bot token from BotFather; get chat_id by messaging the bot then calling
+#   https://api.telegram.org/bot<TOKEN>/getUpdates
+# Leaving either blank disables alerts (the deterrent still runs normally).
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_TIMEOUT   = 10   # seconds for the sendPhoto HTTPS request
 
 # Thermal safety
 MAX_CPU_TEMP_C = 78.0   # pause inference above this to protect the SoC

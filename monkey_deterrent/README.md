@@ -46,6 +46,33 @@ pip install -r requirements_pi.txt
 python3 main.py
 ```
 
+## Telegram alerts (optional)
+
+When a monkey is detected **at or above `BUZZER_CONFIDENCE_THRESHOLD`** (default 0.85),
+the system sounds the deterrent *and* sends an annotated photo (bounding box + confidence)
+to your Telegram chat, captioned with the timestamp and detection rate. The photo is
+encoded in memory and sent on a background thread — nothing is written to the SD card and
+the deterrent loop is never blocked. If the credentials are unset, alerts are simply
+disabled and everything else runs normally.
+
+### Setup
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the **token**.
+2. Send your bot any message, then find your **chat_id**:
+   ```bash
+   curl "https://api.telegram.org/bot<TOKEN>/getUpdates"
+   ```
+   Look for `"chat":{"id":<NUMBER>}` in the response.
+3. Provide both as environment variables (kept out of git):
+   ```bash
+   export TELEGRAM_BOT_TOKEN="123456:ABC-..."
+   export TELEGRAM_CHAT_ID="<NUMBER>"
+   python3 main.py
+   ```
+
+Tune `BUZZER_CONFIDENCE_THRESHOLD` in `config.py` to control how confident a detection
+must be before the buzzer fires and an alert is sent.
+
 ## Overheating prevention (built in)
 
 1. **PIR gating** — camera frames are only inferred when the PIR detects motion.
@@ -81,6 +108,8 @@ After=multi-user.target
 Type=simple
 User=bobby
 WorkingDirectory=/home/bobby/monkey_deterrent
+Environment=TELEGRAM_BOT_TOKEN=123456:ABC-...
+Environment=TELEGRAM_CHAT_ID=000000000
 ExecStart=/home/bobby/monkey_deterrent/venv/bin/python3 main.py
 Restart=on-failure
 
