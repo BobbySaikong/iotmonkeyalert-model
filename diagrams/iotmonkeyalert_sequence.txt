@@ -1,0 +1,28 @@
+@startuml
+actor User
+
+
+participant "PIR Sensor" as PIR
+participant "Camera" as Cam
+participant "YOLOv5n Model" as Model
+participant "Ultrasonic Buzzer" as Buzzer
+participant "Telegram Bot" as Bot
+
+
+User -> PIR: Activate device
+
+PIR -> PIR: Detect motion
+
+PIR -> Cam: Trigger camera activation
+
+Cam -> Model: Send input frame
+
+Model -> Model: Infer frame
+Model -> Model: Generate detection result
+Model -> Cam: Send potential detection (confidence >= 0.5)
+Model -> Buzzer: Trigger buzzer
+Buzzer -> Buzzer : Emits ultrasonic sound
+Cam -> Cam : Capture detection frame
+Cam -> Bot : Send detection image file
+Bot -> User: Send alert with image file
+@enduml

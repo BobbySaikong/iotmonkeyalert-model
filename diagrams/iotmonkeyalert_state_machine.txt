@@ -1,0 +1,20 @@
+@startuml
+[*] --> Idle : PIR sensor activated
+
+Idle --> MotionDetected : PIR sensor triggers
+MotionDetected --> CameraActive : Activate camera
+CameraActive --> DetectionRunning : Start YOLOv5n inference
+
+DetectionRunning --> MonkeyDetected : Detection with confidence ≥ 0.5
+DetectionRunning --> Idle : No detection (timeout)
+
+MonkeyDetected --> Alerting : Save image + Send Telegram alert
+MonkeyDetected --> Deterring : Trigger ultrasonic buzzer
+
+Alerting --> Idle : Alert sent
+Deterring --> Idle : Buzzer finished
+
+Idle --> Fault : Hardware/Network error
+Fault --> Maintenance : Admin troubleshooting
+Maintenance --> Idle : Issue resolved
+@enduml

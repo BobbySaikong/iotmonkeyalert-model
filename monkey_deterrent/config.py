@@ -30,13 +30,12 @@ NCNN_INPUT_BLOB  = "in0"    # confirm against the .param file
 NCNN_OUTPUT_BLOB = "out0"   # confirm against the .param file
 
 IMAGE_SIZE          = 416   # 416 is faster/cooler than 640; good enough for Pi
-CONFIDENCE_THRESHOLD = 0.50
-IOU_THRESHOLD        = 0.45
+CONFIDENCE_THRESHOLD = 0.80
 
 # The detector still *detects* from CONFIDENCE_THRESHOLD, but the buzzer (and the
 # Telegram alert) only fire when the best detection in a frame is at/above this.
 # Raise toward 0.90 for fewer false alarms; lower toward 0.80 to catch more.
-BUZZER_CONFIDENCE_THRESHOLD = 0.85
+BUZZER_CONFIDENCE_THRESHOLD = 0.90
 
 # Telegram alerts — secrets come from the environment, never committed to git.
 # Set these in the systemd unit (Environment=...) or your shell before running.
@@ -53,8 +52,8 @@ TEMP_CHECK_INTERVAL = 5  # seconds between temperature polls when throttling
 
 # Timing
 DETECTION_COOLDOWN   = 15.0  # seconds between alarm triggers
-BUZZER_DURATION      = 4.0   # seconds the alarm runs
-PIR_POLL_INTERVAL    = 0.05  # seconds between PIR reads when idle
+BUZZER_DURATION      = 6.0   # seconds the alarm runs
+PIR_POLL_INTERVAL    = 1  # seconds between PIR reads when idle
 
 # Camera
 CAMERA_WIDTH  = 640

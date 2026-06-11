@@ -1,0 +1,28 @@
+@startuml
+start
+
+:Device powered on;
+:Initialize sensors and network;
+
+if (Motion detected by PIR?) then (Yes)
+  :Activate camera;
+  :Capture frame;
+  :Run YOLOv5n inference;
+
+  if (Monkey detected with confidence ≥ 0.5?) then (Yes)
+    :Save detection image;
+    :Trigger ultrasonic buzzer (>20kHz);
+    :Send alert via Telegram API;
+    :Attach image and metadata (time, location);
+  else (No)
+    :Ignore frame;
+  endif
+
+else (No)
+  :Idle / wait for motion;
+endif
+
+:Loop back to sensor monitoring;
+
+stop
+@enduml

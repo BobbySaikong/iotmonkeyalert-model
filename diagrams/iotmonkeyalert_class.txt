@@ -1,0 +1,39 @@
+@startuml
+
+class Sensor {
+  detectionRange
+  angle
+  detectMotion()
+  activateCamera()
+}
+
+class Camera {
+  resolution
+  isAutofocus
+  captureFrame()
+}
+
+class DetectionModel {
+  confidenceThreshold
+  model
+  infer()
+  classify()
+}
+
+class AlertSystem {
+  chatID
+  getImage()
+  sendAlert(imagePath,caption)
+}
+
+
+
+Camera --> AlertSystem
+Sensor --> Camera
+Camera --> DetectionModel
+DetectionModel --> AlertSystem
+
+
+
+
+@enduml
