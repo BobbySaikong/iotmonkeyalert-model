@@ -1,7 +1,13 @@
 # Install on Pi — no PyTorch, no ultralytics (those cause "Illegal instruction")
+# numpy MUST stay <2: picamera2/simplejpeg/ncnn/onnxruntime are compiled against
+# the numpy 1.x ABI; numpy 2.x triggers "numpy.dtype size changed" at import.
+numpy>=1.21,<2
 ncnn>=1.0.20240102        # ENGINE="ncnn" — faster on ARM CPU than onnxruntime
 onnxruntime>=1.16.0       # ENGINE="onnx" fallback
-opencv-python-headless>=4.8.0
+# Full (GUI) opencv, NOT -headless: live_preview.py uses cv2.imshow/namedWindow,
+# which the headless build omits ("function not implemented / rebuild with GTK").
+# Cap <4.11 — 4.11+ requires numpy>=2 and would drag numpy 2.x back in.
+opencv-python>=4.8.0,<4.11
 requests>=2.31.0          # HTTPS POST to Telegram sendPhoto for detection alerts
 pigpio>=1.78             # hardware PWM for clean ultrasonic (20–40 kHz) on GPIO18
 # Requires the pigpiod daemon:
